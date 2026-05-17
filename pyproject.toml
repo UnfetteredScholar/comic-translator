@@ -9,6 +9,13 @@ dependencies = [
   "torchvision>=0.26.0",
   "pytorch-triton-rocm>=3.5.1 ; sys_platform == 'linux'",
   "triton-rocm>=3.6.0 ; sys_platform == 'linux'",
+  "pillow>=12.2.0",
+  "transformers>=5.8.1",
+  "python-dotenv>=1.2.2",
+  "pydantic>=2.13.4",
+  "pydantic-settings>=2.14.1",
+  "accelerate>=1.13.0",
+  "requests>=2.34.2",
 ]
 
 [tool.uv.sources]
