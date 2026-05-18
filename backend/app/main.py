@@ -1,15 +1,21 @@
-from image_translator.pipeline import ComicTranslator
+from api.v1.routers import health, image
+from core.config import settings
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI(
+    title=settings.APP_NAME,
+    description=settings.APP_DESCRIPTION,
+    version=settings.APP_VERSION,
+)
 
-def main():
-    comic_translator = ComicTranslator()
-    with open("app/images/japanese_test.jpg", "rb") as f:
-        data = f.read()
-    # comic_translator.label_comic_page(data)
-    translated_data = comic_translator.tanslate_comic_page(data, "en")
-    with open("app/images/japanese_test_translated.jpg", "wb") as f:
-        f.write(translated_data)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-
-if __name__ == "__main__":
-    main()
+app.include_router(health.router)
+app.include_router(image.router)

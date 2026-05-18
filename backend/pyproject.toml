@@ -16,6 +16,7 @@ dependencies = [
   "pydantic-settings>=2.14.1",
   "accelerate>=1.13.0",
   "requests>=2.34.2",
+  "fastapi[standard]>=0.136.1",
 ]
 
 [tool.uv.sources]
