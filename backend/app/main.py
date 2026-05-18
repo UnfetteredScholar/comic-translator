@@ -1,4 +1,4 @@
-from utils.pipeline import ComicTranslator
+from image_translator.pipeline import ComicTranslator
 
 
 def main():
