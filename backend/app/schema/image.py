@@ -15,3 +15,8 @@ class ExtractedTextBox(DetectedTextBox):
 
 class TranslatedTextBox(ExtractedTextBox):
     translated_text: str
+
+
+class FillTextBox(TranslatedTextBox):
+    fill_color_hex: str | None = None
+    font_color_hex: str | None = None

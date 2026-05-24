@@ -1,10 +1,11 @@
-from utils.ocr import OCR
-from utils.text_detector import ComicTextDetector
-from utils.translate import Translator
 import io
-from core.config import settings
-from PIL import Image
 import time
+
+from core.config import settings
+from image_translator.ocr import OCR
+from image_translator.text_detector import ComicTextDetector
+from image_translator.translate import Translator
+from PIL import Image
 
 
 class ComicTranslator:
