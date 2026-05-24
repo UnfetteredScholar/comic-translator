@@ -21,3 +21,8 @@ wheels/
 *.tiff
 *.ico
 *.webp
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.env.local
