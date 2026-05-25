@@ -2,17 +2,26 @@ import { useState } from "react";
 import { HealthBanner } from "@/components/HealthBanner";
 import { ImageUpload } from "@/components/ImageUpload";
 import { StepProgress } from "@/components/StepProgress";
+import { DetectButton } from "@/components/DetectButton";
 import type { WorkflowStep } from "@/types/api";
+import type {DetectedTextBox} from "@/types/api";
+import { ImageWorkspace } from "@/components/ImageWorkspace";
 
 function App() {
   const [step, setStep] = useState<WorkflowStep>("upload");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [textBoxes, setTextBoxes] = useState<DetectedTextBox[]>([]);
 
   function handleImageSelected(base64: string, dataUrl: string) {
     setImageBase64(base64);
     setPreviewUrl(dataUrl);
     setStep("detect");
+  }
+
+  async function handleDetect(textBoxes: DetectedTextBox[]) {
+    setTextBoxes(textBoxes);
+    setStep("extract");
   }
 
   return (
@@ -30,16 +39,28 @@ function App() {
       <ImageUpload onImageSelected={handleImageSelected} />
 
       {imageBase64 && previewUrl && step !== "upload" && (
-        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-700">
           <p>
-            Image loaded ({Math.round(imageBase64.length / 1024)} KB as base64). Next up: call{" "}
-            <code className="rounded bg-slate-100 px-1">/image/extract-text-regions</code> when you
-            build step 2.
+            Image loaded ({Math.round(imageBase64.length / 1024)} KB).
           </p>
+        </section>
+      )}
+
+      {step === "detect" && (
+        <section className="space-y-4">
+          <DetectButton imageBase64={imageBase64 ?? ""} onDetect={handleDetect} />
+        </section>
+      )}
+
+      {step === "extract" && (
+        <section className="space-y-4">
+          <ImageWorkspace imageUrl={previewUrl ?? ""} textBoxes={textBoxes} />
         </section>
       )}
     </div>
   );
+
+
 }
 
 export default App;
