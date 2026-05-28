@@ -1,91 +1,149 @@
-import type { DetectedTextBox } from "@/types/api";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ImageWithBoxes } from "@/components/ImageWithBoxes";
+import { BoxPropertyEditor } from "@/components/BoxPropertyEditor";
+import type { ImageBounds } from "@/lib/imageCoordinates";
+import {
+  createDefaultWorkspaceBox,
+  toWorkspaceBoxes,
+  type WorkspaceTextBox,
+} from "@/lib/workspaceBoxes";
 
-function getDisplayMetrics(img: HTMLImageElement) {
-  const { naturalWidth, naturalHeight, clientWidth, clientHeight } = img;
-  const scale = Math.min(
-    clientWidth / naturalWidth,
-    clientHeight / naturalHeight,
-  );
-  const width = naturalWidth * scale;
-  const height = naturalHeight * scale;
-  const offsetX = (clientWidth - width) / 2;
-  const offsetY = (clientHeight - height) / 2;
-  return { scale, offsetX, offsetY };
-}
-
-function boxToRect(
-  box: [number, number, number, number],
-  metrics: ReturnType<typeof getDisplayMetrics>,
-) {
-  const [x0, y0, x1, y1] = box;
-  const { scale, offsetX, offsetY } = metrics;
-  return {
-    x: offsetX + x0 * scale,
-    y: offsetY + y0 * scale,
-    w: (x1 - x0) * scale,
-    h: (y1 - y0) * scale,
-  };
-}
+export type { WorkspaceTextBox } from "@/lib/workspaceBoxes";
 
 interface ImageWorkspaceProps {
   imageUrl: string;
-  textBoxes: DetectedTextBox[];
+  textBoxes: WorkspaceTextBox[];
+  onTextBoxesChange?: (boxes: WorkspaceTextBox[]) => void;
 }
 
-export function ImageWorkspace({ imageUrl, textBoxes }: ImageWorkspaceProps) {
-  const imgRef = useRef<HTMLImageElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const drawBoxes = useCallback(() => {
-    const img = imgRef.current;
-    const canvas = canvasRef.current;
-    if (!img || !canvas || img.naturalWidth === 0) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = img.clientWidth * dpr;
-    canvas.height = img.clientHeight * dpr;
-    canvas.style.width = `${img.clientWidth}px`;
-    canvas.style.height = `${img.clientHeight}px`;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, img.clientWidth, img.clientHeight);
-
-    const metrics = getDisplayMetrics(img);
-    for (const { box, label } of textBoxes) {
-      const { x, y, w, h } = boxToRect(box, metrics);
-      ctx.strokeStyle = "#22c55e";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, w, h);
-      ctx.fillStyle = "#22c55e";
-      ctx.font = "12px sans-serif";
-      ctx.fillText(label, x, Math.max(12, y - 4));
-    }
-  }, [textBoxes]);
+export function ImageWorkspace({
+  imageUrl,
+  textBoxes,
+  onTextBoxesChange,
+}: ImageWorkspaceProps) {
+  const [boxes, setBoxes] = useState<WorkspaceTextBox[]>(() =>
+    toWorkspaceBoxes(textBoxes),
+  );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [imageSize, setImageSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   useEffect(() => {
-    drawBoxes();
-    window.addEventListener("resize", drawBoxes);
-    return () => window.removeEventListener("resize", drawBoxes);
-  }, [drawBoxes, imageUrl]);
+    const next = toWorkspaceBoxes(textBoxes);
+    setBoxes(next);
+    setSelectedId((id) =>
+      id && next.some((box) => box.id === id) ? id : null,
+    );
+  }, [textBoxes]);
+
+  const updateBoxes = useCallback(
+    (next: WorkspaceTextBox[]) => {
+      setBoxes(next);
+      onTextBoxesChange?.(next);
+    },
+    [onTextBoxesChange],
+  );
+
+  const overlayBoxes = useMemo(
+    () =>
+      boxes.map((box) => ({
+        id: box.id,
+        bounds: box.box,
+        label: box.label,
+        fillColor: box.fill_color_hex,
+      })),
+    [boxes],
+  );
+
+  const selectedBox = boxes.find((box) => box.id === selectedId) ?? null;
+
+  const handleBoundsChange = (id: string, bounds: ImageBounds) => {
+    updateBoxes(
+      boxes.map((box) => (box.id === id ? { ...box, box: bounds } : box)),
+    );
+  };
+
+  const handlePropertyChange = (
+    patch: Partial<Pick<WorkspaceTextBox, "text" | "fill_color_hex">>,
+  ) => {
+    if (!selectedId) return;
+    updateBoxes(
+      boxes.map((box) => (box.id === selectedId ? { ...box, ...patch } : box)),
+    );
+  };
+
+  const handleAddBox = () => {
+    if (!imageSize) return;
+    const newBox = createDefaultWorkspaceBox(imageSize.width, imageSize.height);
+    updateBoxes([...boxes, newBox]);
+    setSelectedId(newBox.id);
+  };
+
+  const handleDeleteBox = () => {
+    if (!selectedId) return;
+    const next = boxes.filter((box) => box.id !== selectedId);
+    updateBoxes(next);
+    setSelectedId(null);
+  };
 
   return (
     <section className="space-y-4">
-      <div className="relative w-full max-h-96">
-        <img
-          ref={imgRef}
-          src={imageUrl}
-          alt="Uploaded comic preview"
-          className="block max-h-96 w-full rounded-lg border border-slate-200 object-contain"
-          onLoad={drawBoxes}
-        />
-        <canvas
-          ref={canvasRef}
-          className="pointer-events-none absolute inset-0 h-full w-full"
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={handleAddBox}
+          disabled={!imageSize}
+        >
+          Add box
+        </button>
+        <button
+          type="button"
+          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={handleDeleteBox}
+          disabled={!selectedId}
+        >
+          Delete selected
+        </button>
+        <span className="text-xs text-slate-500">
+          {boxes.length} box{boxes.length === 1 ? "" : "es"}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          <ImageWithBoxes
+            src={imageUrl}
+            alt="Uploaded comic preview"
+            boxes={overlayBoxes}
+            imageClassName="max-h-[32rem]"
+            interactive
+            selectedBoxId={selectedId}
+            onSelectBox={setSelectedId}
+            onBoxBoundsChange={handleBoundsChange}
+            onImageDimensions={(width, height) =>
+              setImageSize({ width, height })
+            }
+          />
+          <p className="mt-2 text-xs text-slate-500">
+            Click a box to select it. Drag to move, use handles to resize.
+          </p>
+        </div>
+
+        {selectedBox && (
+          <BoxPropertyEditor
+            box={{
+              label: selectedBox.label,
+              score: selectedBox.score,
+              text: selectedBox.text,
+              fill_color_hex: selectedBox.fill_color_hex,
+            }}
+            onChange={handlePropertyChange}
+            onDelete={handleDeleteBox}
+          />
+        )}
       </div>
     </section>
   );

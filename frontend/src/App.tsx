@@ -3,15 +3,22 @@ import { HealthBanner } from "@/components/HealthBanner";
 import { ImageUpload } from "@/components/ImageUpload";
 import { StepProgress } from "@/components/StepProgress";
 import { DetectButton } from "@/components/DetectButton";
-import type { WorkflowStep } from "@/types/api";
-import type {DetectedTextBox} from "@/types/api";
+import type { DetectedTextBox, WorkflowStep } from "@/types/api";
 import { ImageWorkspace } from "@/components/ImageWorkspace";
+import {
+  toWorkspaceBoxes,
+  type WorkspaceTextBox,
+} from "@/lib/workspaceBoxes";
 
 function App() {
   const [step, setStep] = useState<WorkflowStep>("upload");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [textBoxes, setTextBoxes] = useState<DetectedTextBox[]>([]);
+  const [textBoxes, setTextBoxes] = useState<WorkspaceTextBox[]>([]);
+
+  function handleTextBoxesChange(boxes: WorkspaceTextBox[]) {
+    setTextBoxes(boxes);
+  }
 
   function handleImageSelected(base64: string, dataUrl: string) {
     setImageBase64(base64);
@@ -19,8 +26,8 @@ function App() {
     setStep("detect");
   }
 
-  async function handleDetect(textBoxes: DetectedTextBox[]) {
-    setTextBoxes(textBoxes);
+  async function handleDetect(detected: DetectedTextBox[]) {
+    setTextBoxes(toWorkspaceBoxes(detected));
     setStep("extract");
   }
 
@@ -54,7 +61,11 @@ function App() {
 
       {step === "extract" && (
         <section className="space-y-4">
-          <ImageWorkspace imageUrl={previewUrl ?? ""} textBoxes={textBoxes} />
+          <ImageWorkspace
+            imageUrl={previewUrl ?? ""}
+            textBoxes={textBoxes}
+            onTextBoxesChange={handleTextBoxesChange}
+          />
         </section>
       )}
     </div>
