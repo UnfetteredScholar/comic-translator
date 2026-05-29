@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { base64ToDataUrl, fileToBase64 } from "@/api/client";
+import type { WorkflowStep } from "@/types/api";
 
 interface ImageUploadProps {
   onImageSelected: (base64: string, previewUrl: string) => void;
+  step: WorkflowStep;
 }
 
-export function ImageUpload({ onImageSelected }: ImageUploadProps) {
+export function ImageUpload({ onImageSelected, step }: ImageUploadProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +54,7 @@ export function ImageUpload({ onImageSelected }: ImageUploadProps) {
       {isLoading && <p className="text-sm text-slate-600">Reading file…</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {previewUrl && (
+      {previewUrl && step === "upload" && (
         <img
           src={previewUrl}
           alt="Uploaded comic preview"

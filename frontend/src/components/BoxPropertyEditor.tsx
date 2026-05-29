@@ -4,17 +4,20 @@ export interface BoxPropertyValues {
   label: TextBoxLabel;
   score: number;
   text?: string;
+  translated_text?: string;
   fill_color_hex?: string | null;
+  font_color_hex?: string | null;
 }
 
 interface BoxPropertyEditorProps {
   box: BoxPropertyValues;
-  onChange: (patch: Partial<Pick<BoxPropertyValues, "text" | "fill_color_hex">>) => void;
+  onChange: (patch: Partial<Pick<BoxPropertyValues, "text"| "translated_text" | "fill_color_hex" | "font_color_hex">>) => void;
   onDelete?: () => void;
 }
 
 export function BoxPropertyEditor({ box, onChange, onDelete }: BoxPropertyEditorProps) {
   const fillColor = box.fill_color_hex ?? "#ffffff";
+  const fontColor = box.font_color_hex ?? "#000000";
 
   return (
     <aside className="w-64 shrink-0 space-y-4 rounded-lg border border-slate-200 bg-white p-4 text-sm">
@@ -31,10 +34,21 @@ export function BoxPropertyEditor({ box, onChange, onDelete }: BoxPropertyEditor
         <span className="text-slate-700">Text</span>
         <textarea
           className="w-full resize-y rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          rows={4}
+          rows={2}
           value={box.text ?? ""}
-          placeholder="Extracted or translated text…"
+          placeholder="Extracted text"
           onChange={(e) => onChange({ text: e.target.value })}
+        />
+      </label>
+
+      <label className="block space-y-1">
+        <span className="text-slate-700">Translated text</span>
+        <textarea
+          className="w-full resize-y rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          rows={2}
+          value={box.translated_text ?? ""}
+          placeholder="Translated text"
+          onChange={(e) => onChange({ translated_text: e.target.value })}
         />
       </label>
 
@@ -52,6 +66,24 @@ export function BoxPropertyEditor({ box, onChange, onDelete }: BoxPropertyEditor
             className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1.5 font-mono text-xs text-slate-900"
             value={fillColor}
             onChange={(e) => onChange({ fill_color_hex: e.target.value })}
+          />
+        </div>
+      </label>
+
+      <label className="block space-y-1">
+        <span className="text-slate-700">Font color</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            className="h-9 w-12 cursor-pointer rounded border border-slate-300"
+            value={fontColor}
+            onChange={(e) => onChange({ font_color_hex: e.target.value })}
+          />
+          <input
+            type="text"
+            className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1.5 font-mono text-xs text-slate-900"
+            value={fontColor}
+            onChange={(e) => onChange({ font_color_hex: e.target.value })}
           />
         </div>
       </label>

@@ -66,7 +66,7 @@ export function ImageWorkspace({
   };
 
   const handlePropertyChange = (
-    patch: Partial<Pick<WorkspaceTextBox, "text" | "fill_color_hex">>,
+    patch: Partial<Pick<WorkspaceTextBox, "text" | "translated_text" | "fill_color_hex" | "font_color_hex">>,
   ) => {
     if (!selectedId) return;
     updateBoxes(
@@ -138,7 +138,9 @@ export function ImageWorkspace({
               label: selectedBox.label,
               score: selectedBox.score,
               text: selectedBox.text,
+              translated_text: selectedBox.translated_text,
               fill_color_hex: selectedBox.fill_color_hex,
+              font_color_hex: selectedBox.font_color_hex,
             }}
             onChange={handlePropertyChange}
             onDelete={handleDeleteBox}

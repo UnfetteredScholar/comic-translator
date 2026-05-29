@@ -58,9 +58,49 @@ export function translateTextList(
   });
 }
 
+export async function replaceImageText(
+  imageBase64: string,
+  textBoxes: TranslatedTextBox[],
+  defaultFillHex: string = "#FFFFFF",
+  defaultFontHex: string = "#000000",
+): Promise<{ base64: string; previewUrl: string }> {
+  const response = await fetch(`${API_BASE}/image/replace-image-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_data: imageBase64,
+      text_boxes: textBoxes,
+      default_fill_hex: defaultFillHex,
+      default_font_hex: defaultFontHex,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Request failed: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const mimeType = blob.type || response.headers.get("Content-Type") || "image/jpeg";
+  const base64 = await blobToBase64(blob);
+
+  return { base64, previewUrl: base64ToDataUrl(base64, mimeType) };
+}
+
+
 export async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+export async function blobToBase64(blob: Blob): Promise<string> {
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
   let binary = "";
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
