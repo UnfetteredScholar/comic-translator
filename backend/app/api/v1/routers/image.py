@@ -20,6 +20,7 @@ from image_translator.ocr import OCR
 from image_translator.text_detector import ComicTextDetector, ImageTextBox
 from image_translator.translate import Translator
 from PIL import Image
+from schema.font import FONT_PATHS, Font
 from schema.image import (
     DetectedTextBox,
     ExtractedTextBox,
@@ -147,11 +148,14 @@ async def replace_image_text(
     text_boxes: list[FillTextBox],
     default_fill_hex: Annotated[str, Body()] = "#FFFFFF",
     default_font_hex: Annotated[str, Body()] = "#000000",
+    font: Annotated[Font, Body()] = Font.COOLVETICA,
 ):
     """Replaces the text in the input boxes with the provided text"""
     try:
         text_detector = ComicTextDetector(
-            hf_token=settings.HF_TOKEN, model_id=settings.BUBBLE_DETECTION_MODEL_ID
+            hf_token=settings.HF_TOKEN,
+            model_id=settings.BUBBLE_DETECTION_MODEL_ID,
+            font_path=FONT_PATHS[font],
         )
         image = Image.open(io.BytesIO(base64.b64decode(image_data)))
         boxes = []
@@ -173,7 +177,7 @@ async def replace_image_text(
 
         return FileResponse(temp_file.name, media_type="image/jpeg")
     except Exception as e:
-        logger.error(f"Error replacing image text: {e}")
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

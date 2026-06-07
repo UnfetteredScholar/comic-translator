@@ -1,16 +1,13 @@
-from transformers import (
-    RTDetrImageProcessor,
-    RTDetrForObjectDetection,
-)
-from PIL import Image, ImageDraw
-import torch
-from dotenv import load_dotenv
 import os
-from core.config import settings
+import textwrap
 from dataclasses import dataclass
 from typing import Literal
-from PIL import ImageFont, ImageDraw
-import textwrap
+
+import torch
+from core.config import settings
+from dotenv import load_dotenv
+from PIL import Image, ImageDraw, ImageFont
+from transformers import RTDetrForObjectDetection, RTDetrImageProcessor
 
 
 @dataclass
@@ -21,7 +18,7 @@ class ImageTextBox:
 
 
 class ComicTextDetector:
-    def __init__(self, hf_token: str, model_id: str):
+    def __init__(self, hf_token: str, model_id: str, font_path: str):
         self.image_processor = RTDetrImageProcessor.from_pretrained(
             model_id, token=hf_token
         )
@@ -30,7 +27,7 @@ class ComicTextDetector:
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.image_model.to(self.device)
-        self.font_path = "app/fonts/Coolvetica Rg.otf"
+        self.font_path = font_path
 
     def _get_text_size(
         self, text: str, font: ImageFont.FreeTypeFont, draw: ImageDraw.ImageDraw

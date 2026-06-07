@@ -135,5 +135,6 @@
       }
     ],
     "default_fill_hex": "#FFFFFF",
-    "default_font_hex": "#000000"
+    "default_font_hex": "#000000",
+    "font": "Coolvetica Regular"
   }
