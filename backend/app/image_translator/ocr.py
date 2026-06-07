@@ -62,5 +62,5 @@ class OCR:
             headers=headers,
         )
 
-        print(response.json()["choices"][0]["message"]["content"])
+        print(response.json())
         return response.json()["choices"][0]["message"]["content"]

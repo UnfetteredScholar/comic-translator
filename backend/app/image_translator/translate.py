@@ -73,23 +73,26 @@ class Translator:
             "Content-Type": "application/json",
         }
 
+        # prompt = f"""
+        # You are a professional translator.
+
+        # Translate the following list of strings into {target_language}.
+
+        # Rules:
+        # - Keep meaning accurate
+        # - Preserve tone
+        # - Return ONLY a JSON list of translated strings
+        # - Do NOT add explanations
+        # - Output must match input order exactly
+
+        # Input:
+        # {text_list}
+        # """
+
         prompt = f"""
-        You are a professional translator.
-
-        Translate the following text items into {target_language}.
-
-        Rules:
-        - Keep meaning accurate
-        - Preserve tone (important for dialogue/comics)
-        - Return ONLY a JSON list of translated strings
-        - Do NOT add explanations
-        - Output must match input order exactly
-
-        Input:
+        Translate the following: {text_list} to {target_language} and return the result as a JSON list of strings.
+        Response format: ["translated_text_1", "translated_text_2", "translated_text_3", ...]
         """
-
-        for i, text in enumerate(text_list):
-            prompt += f"{i+1}. {text}\n"
 
         json_payload = {
             "model": self.model,
@@ -102,6 +105,8 @@ class Translator:
             "temperature": 0,
         }
 
+        print(json_payload)
+
         response = requests.post(
             f"{self.base_url}/v1/chat/completions",
             json=json_payload,
@@ -109,14 +114,23 @@ class Translator:
         )
 
         content = response.json()["choices"][0]["message"]["content"]
-
         print(content)
-
         # Parse safely
 
         try:
             return json.loads(content)
         except Exception:
             # fallback: very common in local models
-            print(f"Error parsing JSON: {content}")
+            return self._clean_json_response(content)
+
+
+    def _clean_json_response(self, response: str) -> list[str]:
+        """
+        Cleans the JSON response from the translation model
+        """
+        clean_string = response.strip("```json").strip("```")
+        try:
+            return json.loads(clean_string)
+        except Exception:
+            print(f"Error parsing JSON: {clean_string}")
             return []

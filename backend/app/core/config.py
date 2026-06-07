@@ -54,10 +54,9 @@ class Settings(BaseSettings):
     APP_DESCRIPTION: str = "A tool to translate comic pages"
     HF_TOKEN: str
     BUBBLE_DETECTION_MODEL_ID: str = "ogkalu/comic-text-and-bubble-detector"
-    OCR_MODEL: str = "GLM-OCR-GGUF"
+    OCR_MODEL: str = "Qwen2.5-VL-7B-Instruct-GGUF"
     LLM_BASE_URL: str = "http://localhost:8080"
     LLM_API_KEY: str = "local-ai"
-    TRANSLATION_MODEL: str = "Qwen3-14B-GGUF"
-
+    TRANSLATION_MODEL: str = "Qwen2.5-7B-Instruct-GGUF"
 
 settings = Settings()

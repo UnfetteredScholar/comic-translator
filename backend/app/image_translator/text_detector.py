@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 from transformers import RTDetrForObjectDetection, RTDetrImageProcessor
 
+from schema.font import FONT_PATHS, Font
+
 
 @dataclass
 class ImageTextBox:
@@ -18,7 +20,7 @@ class ImageTextBox:
 
 
 class ComicTextDetector:
-    def __init__(self, hf_token: str, model_id: str, font_path: str):
+    def __init__(self, hf_token: str, model_id: str, font_path: str = FONT_PATHS[Font.COOLVETICA]):
         self.image_processor = RTDetrImageProcessor.from_pretrained(
             model_id, token=hf_token
         )
@@ -92,6 +94,7 @@ class ComicTextDetector:
         text: str,
         box: list[float],
         font: ImageFont.FreeTypeFont,
+        font_color: str = "#000000",
     ):
         x1, y1, x2, y2 = box
 
@@ -100,7 +103,7 @@ class ComicTextDetector:
         x = x1 + (x2 - x1 - w) / 2
         y = y1 + (y2 - y1 - h) / 2
 
-        draw.multiline_text((x, y), text, font=font, fill="#000000", align="center")
+        draw.multiline_text((x, y), text, font=font, fill=font_color, align="center")
 
     def detect_image_text_boxes(
         self,
@@ -213,5 +216,5 @@ class ComicTextDetector:
             wrapped_text, font = self._fit_text_to_box(
                 new_text, text_box.box, self.font_path, draw
             )
-            self.draw_text_in_box(draw, wrapped_text, text_box.box, font)
+            self.draw_text_in_box(draw, wrapped_text, text_box.box, font, text_color_hex)
         return image
