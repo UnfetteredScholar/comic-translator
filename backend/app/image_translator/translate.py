@@ -95,7 +95,8 @@ class Translator:
         # """
 
         prompt = f"""
-        The following is a list of text bubble extracted from a mnaga page: {text_list}. Translate the text to {target_language} and return the result as a JSON list of strings.
+        The following is a list of text bubbles extracted from a mnaga page: {text_list}. Translate the text to {target_language} and return the result as a JSON list of strings.
+        You may rephrase the text to make it more natural and accurate.
         Response format: ["translated_text_1", "translated_text_2", "translated_text_3", ...]
         """
 

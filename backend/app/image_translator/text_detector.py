@@ -118,6 +118,8 @@ class ComicTextDetector:
         A list of ImageTextBox determining the type and location of the text found
         """
 
+        image = image.convert("RGB")
+
         inputs = self.image_processor(images=image, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
