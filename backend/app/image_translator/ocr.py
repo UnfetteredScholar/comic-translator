@@ -48,7 +48,7 @@ class OCR:
                         },
                         {
                             "type": "text",
-                            "text": "Extract all text from this image. Keep layout.",
+                            "text": "Extract all text from this image. Return only the text, no other information or explanation.",
                         },
                     ],
                 }
