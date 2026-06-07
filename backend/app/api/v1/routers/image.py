@@ -62,7 +62,7 @@ async def extract_text_regions(
         text_boxes = text_detector.detect_image_text_boxes(image)
         return text_boxes
     except Exception as e:
-        logger.error(f"Error extracting text regions: {e}")
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

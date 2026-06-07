@@ -89,14 +89,23 @@ class Translator:
         # {text_list}
         # """
 
+        # prompt = f"""
+        # Translate the following: {text_list} to {target_language} and return the result as a JSON list of strings.
+        # Response format: ["translated_text_1", "translated_text_2", "translated_text_3", ...]
+        # """
+
         prompt = f"""
-        Translate the following: {text_list} to {target_language} and return the result as a JSON list of strings.
+        The following is a list of text bubble extracted from a mnaga page: {text_list}. Translate the text to {target_language} and return the result as a JSON list of strings.
         Response format: ["translated_text_1", "translated_text_2", "translated_text_3", ...]
         """
 
         json_payload = {
             "model": self.model,
             "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a professional localizer whose primary goal is to translate Japanese to English. You should use colloquial or slang or nsfw vocabulary if it makes the translation more accurate. You will support other languages  when able.",
+                },
                 {
                     "role": "user",
                     "content": prompt,
@@ -114,7 +123,7 @@ class Translator:
         )
 
         content = response.json()["choices"][0]["message"]["content"]
-        print(content)
+        # print(content)
         # Parse safely
 
         try:
