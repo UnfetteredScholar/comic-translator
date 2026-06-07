@@ -3,6 +3,7 @@ import type {
   ExtractedTextBox,
   HealthResponse,
   TranslatedTextBox,
+  Font,
 } from "@/types/api";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "/api";
@@ -63,6 +64,7 @@ export async function replaceImageText(
   textBoxes: TranslatedTextBox[],
   defaultFillHex: string = "#FFFFFF",
   defaultFontHex: string = "#000000",
+  font: Font = "Coolvetica Regular",
 ): Promise<{ base64: string; previewUrl: string }> {
   const response = await fetch(`${API_BASE}/image/replace-image-text`, {
     method: "POST",
@@ -72,6 +74,7 @@ export async function replaceImageText(
       text_boxes: textBoxes,
       default_fill_hex: defaultFillHex,
       default_font_hex: defaultFontHex,
+      font: font,
     }),
   });
 

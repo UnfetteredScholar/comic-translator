@@ -3,7 +3,7 @@ import { HealthBanner } from "@/components/HealthBanner";
 import { ImageUpload } from "@/components/ImageUpload";
 import { StepProgress } from "@/components/StepProgress";
 import { DetectButton } from "@/components/DetectButton";
-import type { DetectedTextBox, ExtractedTextBox, TranslatedTextBox, WorkflowStep } from "@/types/api";
+import type { DetectedTextBox, ExtractedTextBox, Font, TranslatedTextBox, WorkflowStep } from "@/types/api";
 import { ImageWorkspace } from "@/components/ImageWorkspace";
 import {
   toWorkspaceBoxes,
@@ -12,6 +12,7 @@ import {
 import { OCRButton } from "@/components/OCRButton";
 import { TranslateWorkspace } from "@/components/TranslateWorkspace";
 import { ExportButton } from "./components/ExportButton";
+import { FontSelector } from "./components/FontSelector";
 
 function App() {
   const [step, setStep] = useState<WorkflowStep>("upload");
@@ -20,6 +21,7 @@ function App() {
   const [textBoxes, setTextBoxes] = useState<WorkspaceTextBox[]>([]);
   const [exportedImageBase64, setExportedImageBase64] = useState<string | null>(null);
   const [exportedPreviewUrl, setExportedPreviewUrl] = useState<string | null>(null);
+  const [font, setFont] = useState<Font>("Coolvetica Regular");
 
 
   function handleStepChange(nextStep: WorkflowStep) {
@@ -125,7 +127,8 @@ function App() {
 
       {step === "review" && (
         <section className="space-y-4">
-          <ExportButton imageBase64={imageBase64 ?? ""} textBoxes={textBoxes} onExport={handleExport} />
+          <FontSelector value={font} onChange={setFont} />
+          <ExportButton imageBase64={imageBase64 ?? ""} textBoxes={textBoxes} font={font} onExport={handleExport} />
         </section>
       )}
 

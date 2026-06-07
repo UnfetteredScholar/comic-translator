@@ -6,7 +6,6 @@ import { toExtractedTextBoxes, type WorkspaceTextBox } from "@/lib/workspaceBoxe
 
 interface TranslateWorkspaceProps {
   extractedBoxes: WorkspaceTextBox[];
-  // targetLanguage: string;
   onTranslate: (textBoxes: TranslatedTextBox[]) => void;
 }
 

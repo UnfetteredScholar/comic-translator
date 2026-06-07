@@ -38,3 +38,10 @@ export type WorkflowStep =
   | "translate"
   | "review"
   | "done";
+
+  export type Font =
+  | "Atkinson Hyperlegible Mono Regular"
+  | "Atkinson Hyperlegible Next Regular"
+  | "Atkinson Hyperlegible Regular"
+  | "Coolvetica Regular"
+  | "Noto Sans Regular";
