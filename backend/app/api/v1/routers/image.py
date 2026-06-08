@@ -296,8 +296,16 @@ async def translate_image_set(
 
         print("Saved comic archive to temporary directory")
 
+        # Get all image files in the comic archive
+        image_extensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"]
+        archive_image_files = [
+            name
+            for name in os.listdir(temp_dir_path)
+            if name.endswith(tuple(image_extensions))
+        ]
+
         # Detect text boxes for each image in the temporary directory and store them in the text_boxes_dict
-        for file_name in os.listdir(temp_dir_path):
+        for file_name in archive_image_files:
             file_path = os.path.join(temp_dir, file_name)
             image = Image.open(file_path)
 
@@ -307,7 +315,7 @@ async def translate_image_set(
         print("Detected text boxes for each image in the temporary directory")
 
         # Extract text for each image in the temporary directory and store them in the extracted_text_dict
-        for file_name in os.listdir(temp_dir_path):
+        for file_name in archive_image_files:
             file_path = os.path.join(temp_dir, file_name)
             image = Image.open(file_path)
             text_boxes = text_boxes_dict[file_name]
@@ -332,7 +340,7 @@ async def translate_image_set(
         print("Extracted text for each image in the temporary directory")
 
         # Translate the text for each image in the temporary directory and store them in the translated_text_dict
-        for file_name in os.listdir(temp_dir_path):
+        for file_name in archive_image_files:
             extracted_text_boxes = extracted_text_dict[file_name]
             text_list = [text_box.text for text_box in extracted_text_boxes]
             translated_text_list = translator.translate_text_list(
@@ -358,7 +366,7 @@ async def translate_image_set(
         with NamedTemporaryFile(delete=False, suffix=".zip") as temp_file:
             background_tasks.add_task(delete_file, temp_file.name)
             with zipfile.ZipFile(temp_file.name, "w") as zip_file:
-                for file_name in os.listdir(temp_dir_path):
+                for file_name in archive_image_files:
                     image = Image.open(os.path.join(temp_dir, file_name))
                     text_boxes = text_boxes_dict[file_name]
                     translated_text_boxes = translated_text_dict[file_name]

@@ -236,12 +236,20 @@ class ComicTextDetector:
         Replaces the text boxes in the image with the new text
         using the Lama Manga Dynamic Model to mask the text boxes
         """
-        if len(text_boxes) != len(new_text):
-            raise ValueError("The number of text boxes and new text must be the same")
+        if len(new_text) < len(text_boxes):
+            # Add buffer text boxes to the new text list
+            new_text = new_text + [""] * (len(text_boxes) - len(new_text))
+        elif len(new_text) > len(text_boxes):
+            # Add extra items to the last item of the new text list
+            trimmed_text = new_text[: len(text_boxes) - 1]
+            combined_text = " ".join(new_text[len(text_boxes) :])
+            trimmed_text.append(combined_text)
+            new_text = trimmed_text
 
         # Mask image with Lama Manga Dynamic Model
         model_path = Path(settings.MODELS_DIR) / settings.MASK_MODEL
-        session = load_session(model_path, "ROCm")
+        # session = load_session(model_path, "ROCm")
+        session = load_session(model_path, "CPU")
 
         image = input_image.copy()
         bboxes = [text_box.box for text_box in text_boxes]
