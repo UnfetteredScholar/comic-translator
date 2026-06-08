@@ -1,15 +1,16 @@
 import os
 import textwrap
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 import torch
 from core.config import settings
 from dotenv import load_dotenv
+from image_translator.image_clean import erase_text, load_session
 from PIL import Image, ImageDraw, ImageFont
-from transformers import RTDetrForObjectDetection, RTDetrImageProcessor
-
 from schema.font import FONT_PATHS, Font
+from transformers import RTDetrForObjectDetection, RTDetrImageProcessor
 
 
 @dataclass
@@ -20,7 +21,9 @@ class ImageTextBox:
 
 
 class ComicTextDetector:
-    def __init__(self, hf_token: str, model_id: str, font_path: str = FONT_PATHS[Font.COOLVETICA]):
+    def __init__(
+        self, hf_token: str, model_id: str, font_path: str = FONT_PATHS[Font.COOLVETICA]
+    ):
         self.image_processor = RTDetrImageProcessor.from_pretrained(
             model_id, token=hf_token
         )
@@ -144,7 +147,7 @@ class ComicTextDetector:
 
             text_box = ImageTextBox(score=score.item(), label=label_name, box=box)
 
-            print(text_box.label, text_box.score, text_box.box)
+            # print(text_box.label, text_box.score, text_box.box)
 
             text_boxes.append(text_box)
 
@@ -159,7 +162,6 @@ class ComicTextDetector:
                 fill="#000000",
                 font=ImageFont.truetype(self.font_path, 10),
             )
-        labelled_image.save("labelled_image.jpg")
 
         return [text_box for text_box in text_boxes if text_box.label in allowed_labels]
 
@@ -218,5 +220,39 @@ class ComicTextDetector:
             wrapped_text, font = self._fit_text_to_box(
                 new_text, text_box.box, self.font_path, draw
             )
-            self.draw_text_in_box(draw, wrapped_text, text_box.box, font, text_color_hex)
+            self.draw_text_in_box(
+                draw, wrapped_text, text_box.box, font, text_color_hex
+            )
         return image
+
+    def replace_text_boxes_v3(
+        self,
+        input_image: Image.Image,
+        text_boxes: list[ImageTextBox],
+        new_text: list[str],
+        text_color_hex: str = "#000000",
+    ) -> Image.Image:
+        """
+        Replaces the text boxes in the image with the new text
+        using the Lama Manga Dynamic Model to mask the text boxes
+        """
+        if len(text_boxes) != len(new_text):
+            raise ValueError("The number of text boxes and new text must be the same")
+
+        # Mask image with Lama Manga Dynamic Model
+        model_path = Path(settings.MODELS_DIR) / settings.MASK_MODEL
+        session = load_session(model_path, "ROCm")
+
+        image = input_image.copy()
+        bboxes = [text_box.box for text_box in text_boxes]
+        masked_image = erase_text(session, image, boxes=bboxes)
+
+        draw = ImageDraw.Draw(masked_image)
+        for text_box, new_text in zip(text_boxes, new_text):
+            wrapped_text, font = self._fit_text_to_box(
+                new_text, text_box.box, self.font_path, draw
+            )
+            self.draw_text_in_box(
+                draw, wrapped_text, text_box.box, font, text_color_hex
+            )
+        return masked_image

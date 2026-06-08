@@ -1,7 +1,7 @@
 import base64
-import requests
-
 import json
+
+import requests
 
 
 class Translator:
@@ -60,7 +60,7 @@ class Translator:
             headers=headers,
         )
 
-        print(response.json()["choices"][0]["message"]["content"])
+        # print(response.json()["choices"][0]["message"]["content"])
 
         return response.json()["choices"][0]["message"]["content"]
 
@@ -97,7 +97,7 @@ class Translator:
         prompt = f"""
         The following is a list of text bubbles extracted from a mnaga page: {text_list}. Translate the text to {target_language} and return the result as a JSON list of strings.
         You may rephrase the text to make it more natural and accurate.
-        Response format: ["translated_text_1", "translated_text_2", "translated_text_3", ...]
+        Response format: "["translated_text_1", "translated_text_2", "translated_text_3", ...]"
         """
 
         json_payload = {
@@ -110,12 +110,12 @@ class Translator:
                 {
                     "role": "user",
                     "content": prompt,
-                }
+                },
             ],
             "temperature": 0,
         }
 
-        print(json_payload)
+        # print(json_payload)
 
         response = requests.post(
             f"{self.base_url}/v1/chat/completions",
@@ -124,7 +124,7 @@ class Translator:
         )
 
         content = response.json()["choices"][0]["message"]["content"]
-        # print(content)
+        print(content)
         # Parse safely
 
         try:
@@ -132,7 +132,6 @@ class Translator:
         except Exception:
             # fallback: very common in local models
             return self._clean_json_response(content)
-
 
     def _clean_json_response(self, response: str) -> list[str]:
         """

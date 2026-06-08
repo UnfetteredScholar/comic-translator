@@ -3,8 +3,6 @@ from pathlib import Path
 
 FONTS_DIR = Path(__file__).resolve().parent.parent / "fonts"
 
-print(FONTS_DIR)
-
 
 class Font(Enum):
     ATKINSON_HYPERLEGIBLE_MONO = "Atkinson Hyperlegible Mono Regular"

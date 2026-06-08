@@ -1,6 +1,7 @@
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
@@ -58,5 +59,8 @@ class Settings(BaseSettings):
     LLM_BASE_URL: str = "http://localhost:8080"
     LLM_API_KEY: str = "local-ai"
     TRANSLATION_MODEL: str = "Sugoi-14B-Ultra-GGUF"
+    MODELS_DIR: str = str(Path(__file__).resolve().parent.parent / "models")
+    MASK_MODEL: str = "lama-manga-dynamic.onnx"
+
 
 settings = Settings()

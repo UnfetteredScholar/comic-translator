@@ -17,6 +17,8 @@ dependencies = [
   "accelerate>=1.13.0",
   "requests>=2.34.2",
   "fastapi[standard]>=0.136.1",
+  "opencv-python>=4.13.0.92",
+  "onnxruntime-rocm>=1.22.2.post1",
 ]
 
 [tool.uv.sources]

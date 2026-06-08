@@ -1,4 +1,5 @@
 import base64
+
 import requests
 
 
@@ -48,7 +49,8 @@ class OCR:
                         },
                         {
                             "type": "text",
-                            "text": "Extract all text from this image. Return only the text, no other information or explanation.",
+                            # "text": "Extract all text from this image. Return only the text, no other information or explanation.",
+                            "text": "OCR:",
                         },
                     ],
                 }

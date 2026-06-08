@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel
+from schema.font import Font
 
 
 class DetectedTextBox(BaseModel):

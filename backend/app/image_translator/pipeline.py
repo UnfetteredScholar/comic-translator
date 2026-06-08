@@ -3,87 +3,90 @@ import time
 
 from core.config import settings
 from image_translator.ocr import OCR
-from image_translator.text_detector import ComicTextDetector
+from image_translator.text_detector import ComicTextDetector, ImageTextBox
 from image_translator.translate import Translator
 from PIL import Image
+from schema.font import FONT_PATHS, Font
+from schema.image import (
+    DetectedTextBox,
+    ExtractedTextBox,
+    FillTextBox,
+    TranslatedTextBox,
+)
 
 
 class ComicTranslator:
-    def __init__(self):
+    def __init__(
+        self,
+        default_fill_hex: str = "#FFFFFF",
+        default_font_hex: str = "#000000",
+        font: Font = Font.COOLVETICA,
+    ):
+        self.default_fill_hex = default_fill_hex
+        self.default_font_hex = default_font_hex
+        self.font_path = FONT_PATHS[font]
         self.ocr = OCR(model=settings.OCR_MODEL, api_key=settings.LLM_API_KEY)
         self.text_detector = ComicTextDetector(
-            hf_token=settings.HF_TOKEN, model_id=settings.BUBBLE_DETECTION_MODEL_ID
+            hf_token=settings.HF_TOKEN,
+            model_id=settings.BUBBLE_DETECTION_MODEL_ID,
+            font_path=self.font_path,
         )
         self.translator = Translator(
             model=settings.TRANSLATION_MODEL, api_key=settings.LLM_API_KEY
         )
 
-    def tanslate_comic_page(self, data: bytes, target_language: str = "en") -> bytes:
-        """Translate a comic page
-
-        Args:
-            data: The data of the comic page to translate
-            target_language: The target language to translate the comic page to
-
-        Returns:
-            The translated comic page as bytes
-        """
-        # Convert the data to an image object
-        image = Image.open(io.BytesIO(data))
-
-        start_time = time.time()
-        # Get image boxes
+    def translate_image(self, image: Image.Image, target_language: str) -> Image.Image:
+        """Translates a comic/manga/webtoon page image to a target language"""
+        # Text Box Detection
         text_boxes = self.text_detector.detect_image_text_boxes(image)
-        print(f"Time taken to detect text boxes: {time.time() - start_time} seconds")
-        extracted_text: list[str] = []
-        # translate each text box and replace the text box with the translated text
+
+        # OCR
+        extracted_text: list[ExtractedTextBox] = []
         for text_box in text_boxes:
-            start_time = time.time()
-            box_image = self.text_detector.copy_text_box_section(image, text_box)
+            box_image = self.text_detector.copy_text_box_section(
+                image,
+                ImageTextBox(
+                    score=text_box.score, label=text_box.label, box=text_box.box
+                ),
+            )
             box_image_io = io.BytesIO()
             box_image.save(box_image_io, format="JPEG")
             text = self.ocr.get_image_text(box_image_io.getvalue())
-            print(f"Time taken to extract text: {time.time() - start_time} seconds")
-            extracted_text.append(text)
+            extracted_text_box = ExtractedTextBox(
+                score=text_box.score,
+                label=text_box.label,
+                box=text_box.box,
+                text=text,
+            )
+            extracted_text.append(extracted_text_box)
 
-        # Write the extracted text to a file
-        with open("extracted_text.txt", "w") as f:
-            for text in extracted_text:
-                f.write(text + "\n")
-
-        print("Starting translation...")
-        # for text in extracted_text:
-        #     start_time = time.time()
-        #     output_text = self.translator.translate_text(text, target_language)
-        #     print(f"Time taken to translate text: {time.time() - start_time} seconds")
-        #     translated_text.append(output_text)
-
-        translated_text = self.translator.translate_text_list(
-            extracted_text, target_language
+        # Translation
+        text_list = [text_box.text for text_box in extracted_text]
+        translated_text_list = self.translator.translate_text_list(
+            text_list, target_language
         )
+        translated_text_boxes = [
+            TranslatedTextBox(
+                score=text_box.score,
+                label=text_box.label,
+                box=text_box.box,
+                text=text_box.text,
+                translated_text=translated_text,
+            )
+            for text_box, translated_text in zip(extracted_text, translated_text_list)
+        ]
 
-        image = self.text_detector.replace_text_boxes_v2(
-            image, text_boxes, translated_text
+        # Replace Text Boxes
+        boxes = [
+            ImageTextBox(score=box.score, label=box.label, box=box.box)
+            for box in translated_text_boxes
+        ]
+        new_text = [box.translated_text for box in translated_text_boxes]
+        new_image = self.text_detector.replace_text_boxes_v3(
+            image,
+            boxes,
+            new_text,
+            # fill_color_hex=self.default_fill_hex,
+            text_color_hex=self.default_font_hex,
         )
-
-        # Convert the image to bytes
-        output_buffer = io.BytesIO()
-        image.save(output_buffer, format="JPEG")
-        return output_buffer.getvalue()
-
-    def label_comic_page(self, data: bytes) -> None:
-        """Label a comic page
-
-        Args:
-            data: The data of the comic page to label
-
-        Returns:
-            The labelled comic page as bytes
-        """
-        # Convert the data to an image object
-        image = Image.open(io.BytesIO(data))
-
-        start_time = time.time()
-        # Get image boxes
-        text_boxes = self.text_detector.detect_image_text_boxes(image)
-        print(f"Time taken to detect text boxes: {time.time() - start_time} seconds")
+        return new_image

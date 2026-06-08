@@ -12,6 +12,9 @@ wheels/
 # Environment variables
 .env
 
+# Models
+models/
+
 # Images
 *.jpg
 *.png
