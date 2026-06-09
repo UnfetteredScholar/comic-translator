@@ -391,7 +391,7 @@ async def translate_image_set(
         return FileResponse(
             temp_file.name,
             media_type="application/zip",
-            filename=f"translated_{comic_archive.filename}",
+            filename=f"[MTL] {comic_archive.filename}",
         )
     except Exception as e:
         logger.exception(e)
