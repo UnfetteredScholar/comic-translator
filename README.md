@@ -2,6 +2,10 @@
 
 A free, local-first tool for translating comic and manga pages. Upload a page, detect speech bubbles, extract text with OCR, translate it, then export a new image with the translated text redrawn in place.
 
+## Demo
+
+https://github.com/user-attachments/assets/692ce7db-2ee7-436c-8db6-ead0a677713e
+
 ## Features
 
 - Interactive workflow: upload → detect → OCR → translate → review → export
@@ -12,6 +16,32 @@ A free, local-first tool for translating comic and manga pages. Upload a page, d
 - Batch translation of comic archives (ZIP) via the API
 - FastAPI backend + React / Vite frontend
 
+## Architecture
+
+                 ┌──────────────┐
+                 │ React Client │
+                 └──────┬───────┘
+                        │
+                        ▼
+                 ┌──────────────┐
+                 │   FastAPI    │
+                 └──────┬───────┘
+                        │
+             ┌──────────┼───────────┐
+             ▼          ▼           ▼
+         Detection     OCR      Translation
+             │          │           │
+             └──────────┼───────────┘
+                        ▼
+                   Inpainting
+                        │
+                        ▼
+                   Redrawing
+                        │
+                        ▼
+                  Translated Image
+
+                  
 ## How it works
 
 ```text
@@ -163,6 +193,56 @@ comic-translator/
 | `POST` | `/image/translate-image-set` | Translate a ZIP of pages |
 
 Example request/response JSON lives under [`backend/example/`](backend/example/).
+
+
+## Engineering Decisions
+
+### Why local inference?
+
+Comics and manga are copyrighted, and many pages people want to translate are personal scans. Running detection, OCR, translation, and inpainting on your own machine keeps pages off third-party APIs, avoids per-page cloud costs, and lets you swap models without changing the app. The OCR and translation models are served as GGUF files behind an OpenAI-compatible local server (e.g. llama.cpp); the bubble detector and LaMa inpainter run in-process.
+
+If a user wants to use a cloud hosted model, Comic Translator can be configured to work with any OpenAI compatible API by settings required envs.
+
+### Why FastAPI?
+
+The backend is a thin orchestration layer over heavy model calls. FastAPI gives typed request/response schemas that match the frontend types, automatic OpenAPI docs at `/docs`, and simple multipart handling for single-image and ZIP uploads. CORS is left open for local development; the Vite dev server also proxies `/api` to the backend so the UI can call relative paths without CORS friction.
+
+### Why separate pipeline stages?
+
+Comic OCR and translation are imperfect. Detection often needs a human nudge: move a box, add a missed bubble, drop a false positive, fix a bad OCR string, or tweak a translation before redraw. The UI therefore walks **detect → OCR → translate → review → export**, with each stage as its own endpoint so intermediate results stay editable.
+
+The same stages are composed into one-shot paths (`/image/translate-image`, `/image/translate-image-set`) when you want throughput over review — e.g. translating a whole chapter ZIP without opening the UI.
+
+### How are models configured?
+
+All model IDs and paths come from environment variables via `backend/app/core/config.py` (loaded from `.env`):
+
+| Setting | Role |
+|---------|------|
+| `BUBBLE_DETECTION_MODEL_ID` | Hugging Face RT-DETR comic bubble detector |
+| `OCR_MODEL` / `TRANSLATION_MODEL` | GGUF model names expected by the local LLM server |
+| `LLM_BASE_URL` / `LLM_API_KEY` | OpenAI-compatible server for OCR + translation |
+| `MODELS_DIR` / `MASK_MODEL` | On-disk LaMa ONNX weights for inpainting |
+
+Defaults favor a JP→EN manga workflow (SmolVLM2 for OCR, Sugoi for translation) but can be pointed at whatever your local server exposes.
+
+### How do you handle large images?
+
+OCR runs **one crop per bubble**, which is slower but more reliable than page-level OCR on dense layouts.
+
+Pages are processed at full resolution — there is no downscale or tile step in the pipeline. Detection and inpainting see the original page; the frontend only scales for display overlays. Translation batches strings by estimated token cost against an 8192-token context budget (with a safety margin) so long pages with many bubbles do not blow llama.cpp’s KV cache.
+
+### What happens when inference fails?
+
+API handlers catch exceptions and return HTTP 500 with a short error detail. Translation is more defensive: list output is constrained with a llama.cpp JSON grammar, then cleaned (fences, curly quotes, trailing commas) before parse. If a batch still fails to parse, that call can degrade to an empty list rather than crashing mid-page — so always spot-check batch ZIP output. The `/health` endpoint is a liveness check only; it does not probe the LLM server or model weights.
+
+### Why ONNX for inpainting?
+
+Early redraw paths filled bubbles with a white rectangle. That looked wrong on textured or drawn backgrounds. The current path (`replace_text_boxes_v3`) uses a manga-tuned LaMa model to erase the old glyphs, then fits and centers the new text with Pillow (binary-search font size, word wrap). Shipping LaMa as ONNX keeps inpainting portable across ROCm, CUDA, DirectML, and CPU providers without a second PyTorch training stack. This repo’s Python deps default to **AMD ROCm**; CUDA/CPU users may need to swap the torch / onnxruntime packages.
+
+### How does batch translation work?
+
+`POST /image/translate-image-set` accepts a ZIP of page images plus a target language and optional font. For each image in the archive it runs detection → per-bubble OCR → batched translation → inpaint + redraw, then returns a new ZIP. Output archives are prefixed with `[MTL]` so machine-translated sets are easy to tell apart from the source. This path skips the interactive review loop; use the step endpoints (or the UI) when accuracy matters more than speed.
 
 ## License
 
